@@ -1,14 +1,22 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"net/http"
 
-	"github.com/GabrielMoody/Cariin/internal/documents"
-	"github.com/GabrielMoody/Cariin/internal/index"
+	"github.com/GabrielMoody/Cariin/internal/search"
 )
 
 func main() {
-	idx := index.Build(documents.Documents)
+	router := http.NewServeMux()
 
-	fmt.Println(idx)
+	router.HandleFunc("POST /search", search.SearchHandler)
+
+	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello"))
+	})
+
+	log.Println("Server running on port 8000")
+
+	http.ListenAndServe("localhost:8000", router)
 }
