@@ -28,11 +28,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	var docs []documents.Document
 
 	for _, v := range (*idx)[q.Q] {
-		for _, doc := range documents.Documents {
-			if doc.Id == v {
-				docs = append(docs, doc)
-			}
-		}
+		docs = append(docs, documents.Documents[v])
 	}
 
 	data, _ := json.Marshal(SearchResponse{
