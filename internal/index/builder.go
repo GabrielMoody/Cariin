@@ -32,7 +32,7 @@ func tokenize(text string) []string {
 	return strings.Fields(text)
 }
 
-func Build(docs []documents.Document) *InvertedIdx {
+func Build(docs map[int64]documents.Document) *InvertedIdx {
 	idx := make(InvertedIdx)
 
 	for _, v := range docs {
