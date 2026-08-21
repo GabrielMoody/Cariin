@@ -46,6 +46,39 @@ func TestParseUsesBooleanPrecedence(t *testing.T) {
 	}
 }
 
+func TestParseAndEvaluatePhrase(t *testing.T) {
+	query, err := Parse("go programming")
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	got := postingIDs(query.Evaluate(index.InvertedIdx{
+		"go":          {{DocId: 1, Positions: []int{0}}, {DocId: 2, Positions: []int{0}}},
+		"programming": {{DocId: 1, Positions: []int{1}}, {DocId: 2, Positions: []int{3}}},
+	}))
+	want := []int64{1, 2}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Evaluate() = %v, want %v", got, want)
+	}
+}
+
+func TestParseAndEvaluatePhraseAndImplicitAnd(t *testing.T) {
+	query, err := Parse("go redis sql")
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	got := postingIDs(query.Evaluate(index.InvertedIdx{
+		"go":    {{DocId: 1, Positions: []int{0}}, {DocId: 2, Positions: []int{0}}},
+		"redis": {{DocId: 1, Positions: []int{1}}, {DocId: 2, Positions: []int{4}}},
+		"sql":   {{DocId: 1, Positions: []int{9}}, {DocId: 2, Positions: []int{5}}},
+	}))
+	want := []int64{1, 2}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Evaluate() = %v, want %v", got, want)
+	}
+}
+
 func postingIDs(postings []index.Posting) []int64 {
 	ids := make([]int64, 0, len(postings))
 	for _, posting := range postings {

@@ -2,6 +2,7 @@ package ast
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/GabrielMoody/Cariin/internal/index"
 )
@@ -30,7 +31,55 @@ type NotQuery struct {
 }
 
 func (q TermQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
-	return idx[q.Term]
+	terms := strings.Fields(strings.ToLower(q.Term))
+	if len(terms) <= 1 {
+		return idx[q.Term]
+	}
+
+	postingsByDocument := make(map[int64]index.Posting)
+	for _, posting := range idx[terms[0]] {
+		postingsByDocument[posting.DocId] = posting
+	}
+
+	for _, term := range terms[1:] {
+		termPostings := make(map[int64]index.Posting)
+		for _, posting := range idx[term] {
+			termPostings[posting.DocId] = posting
+		}
+
+		for docID := range postingsByDocument {
+			posting, exists := termPostings[docID]
+			if !exists {
+				delete(postingsByDocument, docID)
+				continue
+			}
+
+			previous := postingsByDocument[docID]
+			if hasAdjacentPosition(previous.Positions, posting.Positions) {
+				continue
+			}
+
+			// No adjacent positions means this word is an implicit AND term.
+		}
+	}
+
+	var result []index.Posting
+	for _, posting := range postingsByDocument {
+		result = append(result, posting)
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].DocId < result[j].DocId })
+	return result
+}
+
+func hasAdjacentPosition(left, right []int) bool {
+	for _, leftPosition := range left {
+		for _, rightPosition := range right {
+			if rightPosition == leftPosition+1 || leftPosition == rightPosition+1 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (q AndQuery) Evaluate(idx index.InvertedIdx) []index.Posting {

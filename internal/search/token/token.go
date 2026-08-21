@@ -25,7 +25,15 @@ type Token struct {
 
 func Lex(input string) ([]Token, error) {
 	var tokens []Token
+	var phrase []string
 	runes := []rune(input)
+	flushPhrase := func() {
+		if len(phrase) == 0 {
+			return
+		}
+		tokens = append(tokens, Token{Type: TokenTerm, Value: strings.Join(phrase, " ")})
+		phrase = nil
+	}
 
 	for position := 0; position < len(runes); {
 		if unicode.IsSpace(runes[position]) {
@@ -35,10 +43,12 @@ func Lex(input string) ([]Token, error) {
 
 		switch runes[position] {
 		case '(':
+			flushPhrase()
 			tokens = append(tokens, Token{Type: TokenLeftParen, Value: "("})
 			position++
 			continue
 		case ')':
+			flushPhrase()
 			tokens = append(tokens, Token{Type: TokenRightParen, Value: ")"})
 			position++
 			continue
@@ -51,21 +61,24 @@ func Lex(input string) ([]Token, error) {
 		value := string(runes[start:position])
 
 		switch strings.ToUpper(value) {
-		case " ":
 		case "AND":
+			flushPhrase()
 			tokens = append(tokens, Token{Type: TokenAND, Value: value})
 		case "OR":
+			flushPhrase()
 			tokens = append(tokens, Token{Type: TokenOR, Value: value})
 		case "NOT":
+			flushPhrase()
 			tokens = append(tokens, Token{Type: TokenNOT, Value: value})
 		default:
 			if value == "" {
 				return nil, fmt.Errorf("empty term at position %d", start)
 			}
-			tokens = append(tokens, Token{Type: TokenTerm, Value: strings.ToLower(value)})
+			phrase = append(phrase, strings.ToLower(value))
 		}
 	}
 
+	flushPhrase()
 	tokens = append(tokens, Token{Type: TokenEOF})
 	return tokens, nil
 }

@@ -30,6 +30,7 @@ func Parse(input string) (ast.Query, error) {
 	if p.current().Type != token.TokenEOF {
 		return nil, fmt.Errorf("unexpected token %q", p.current().Value)
 	}
+
 	return query, nil
 }
 
