@@ -3,10 +3,10 @@ package search
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/GabrielMoody/Cariin/internal/documents"
 	"github.com/GabrielMoody/Cariin/internal/index"
+	"github.com/GabrielMoody/Cariin/internal/search/parser"
 )
 
 type SearchQuery struct {
@@ -24,15 +24,17 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("error")
 	}
 
+	query, err := parser.Parse(req.Q)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	idx := index.Get()
-	queries := strings.Split(req.Q, " ")
-
-	var docs []documents.Document
-
-	for _, q := range queries {
-		for _, v := range (*idx)[q] {
-			docs = append(docs, documents.Documents[v])
-		}
+	ids := query.Evaluate(*idx)
+	docs := make([]documents.Document, 0, len(ids))
+	for _, id := range ids {
+		docs = append(docs, documents.Documents[id])
 	}
 
 	data, _ := json.Marshal(SearchResponse{

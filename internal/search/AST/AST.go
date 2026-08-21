@@ -1,6 +1,8 @@
-package search
+package ast
 
 import (
+	"sort"
+
 	"github.com/GabrielMoody/Cariin/internal/index"
 )
 
@@ -23,7 +25,8 @@ type OrQuery struct {
 }
 
 type NotQuery struct {
-	Term string
+	Term  string
+	Query Query
 }
 
 func (q TermQuery) Evaluate(index index.InvertedIdx) []int64 {
@@ -45,14 +48,34 @@ func (q OrQuery) Evaluate(index index.InvertedIdx) []int64 {
 }
 
 func (q NotQuery) Evaluate(index index.InvertedIdx) []int64 {
-	var result []int64
+	operand := q.Term
+	var excluded []int64
+	if q.Query != nil {
+		excluded = q.Query.Evaluate(index)
+	} else {
+		excluded = index[operand]
+	}
 
-	for range index {
-		if v, ok := index[q.Term]; !ok {
-			result = append(result, v...)
+	excludedSet := make(map[int64]bool, len(excluded))
+	for _, id := range excluded {
+		excludedSet[id] = true
+	}
+
+	allDocuments := make(map[int64]bool)
+	for _, postings := range index {
+		for _, id := range postings {
+			allDocuments[id] = true
 		}
 	}
 
+	var result []int64
+	for id := range allDocuments {
+		if !excludedSet[id] {
+			result = append(result, id)
+		}
+	}
+
+	sort.Slice(result, func(i, j int) bool { return result[i] < result[j] })
 	return result
 }
 
@@ -90,5 +113,6 @@ func union(a, b []int64) []int64 {
 	for v := range set {
 		result = append(result, v)
 	}
+	sort.Slice(result, func(i, j int) bool { return result[i] < result[j] })
 	return result
 }
