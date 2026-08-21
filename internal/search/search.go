@@ -3,6 +3,7 @@ package search
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/GabrielMoody/Cariin/internal/documents"
 	"github.com/GabrielMoody/Cariin/internal/index"
@@ -17,18 +18,21 @@ type SearchResponse struct {
 }
 
 func SearchHandler(w http.ResponseWriter, r *http.Request) {
-	var q SearchQuery
-	if err := json.NewDecoder(r.Body).Decode(&q); err != nil {
+	var req SearchQuery
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(400)
 		json.NewEncoder(w).Encode("error")
 	}
 
 	idx := index.Get()
+	queries := strings.Split(req.Q, " ")
 
 	var docs []documents.Document
 
-	for _, v := range (*idx)[q.Q] {
-		docs = append(docs, documents.Documents[v])
+	for _, q := range queries {
+		for _, v := range (*idx)[q] {
+			docs = append(docs, documents.Documents[v])
+		}
 	}
 
 	data, _ := json.Marshal(SearchResponse{
