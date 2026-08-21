@@ -6,7 +6,12 @@ import (
 	"github.com/GabrielMoody/Cariin/internal/documents"
 )
 
-type InvertedIdx map[string][]int64
+type Posting struct {
+	DocId     int64
+	Positions []int
+}
+
+type InvertedIdx map[string][]Posting
 
 var (
 	Idx  *InvertedIdx

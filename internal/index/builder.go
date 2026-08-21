@@ -39,15 +39,29 @@ func Build(docs map[int64]documents.Document) *InvertedIdx {
 		text := v.Title + " " + v.Body
 
 		tokens := tokenize(text)
-		seen := make(map[string]bool)
 
-		for _, token := range tokens {
-			if seen[token] {
-				continue
+		for i, token := range tokens {
+			postings := idx[token]
+			postingFound := false
+
+			for postingIndex := range postings {
+				if postings[postingIndex].DocId != v.Id {
+					continue
+				}
+
+				postings[postingIndex].Positions = append(postings[postingIndex].Positions, i)
+				postingFound = true
+				break
 			}
 
-			idx[token] = append(idx[token], v.Id)
-			seen[token] = true
+			if !postingFound {
+				postings = append(postings, Posting{
+					DocId:     v.Id,
+					Positions: []int{i},
+				})
+			}
+
+			idx[token] = postings
 		}
 	}
 

@@ -31,10 +31,10 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idx := index.Get()
-	ids := query.Evaluate(*idx)
-	docs := make([]documents.Document, 0, len(ids))
-	for _, id := range ids {
-		docs = append(docs, documents.Documents[id])
+	postings := query.Evaluate(*idx)
+	docs := make([]documents.Document, 0, len(postings))
+	for _, posting := range postings {
+		docs = append(docs, documents.Documents[posting.DocId])
 	}
 
 	data, _ := json.Marshal(SearchResponse{

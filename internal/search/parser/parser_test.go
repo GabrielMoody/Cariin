@@ -9,10 +9,10 @@ import (
 
 func TestParseAndEvaluateBooleanQuery(t *testing.T) {
 	invertedIndex := index.InvertedIdx{
-		"go":     {1, 2},
-		"rust":   {3},
-		"python": {2},
-		"web":    {1, 3},
+		"go":     {{DocId: 1}, {DocId: 2}},
+		"rust":   {{DocId: 3}},
+		"python": {{DocId: 2}},
+		"web":    {{DocId: 1}, {DocId: 3}},
 	}
 
 	query, err := Parse("(GO OR rust) AND NOT python")
@@ -20,7 +20,8 @@ func TestParseAndEvaluateBooleanQuery(t *testing.T) {
 		t.Fatalf("Parse() error = %v", err)
 	}
 
-	got := query.Evaluate(invertedIndex)
+	gotPostings := query.Evaluate(invertedIndex)
+	got := postingIDs(gotPostings)
 	want := []int64{1, 3}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Evaluate() = %v, want %v", got, want)
@@ -33,15 +34,24 @@ func TestParseUsesBooleanPrecedence(t *testing.T) {
 		t.Fatalf("Parse() error = %v", err)
 	}
 
-	got := query.Evaluate(index.InvertedIdx{
-		"go":   {1},
-		"rust": {2},
-		"web":  {3},
+	gotPostings := query.Evaluate(index.InvertedIdx{
+		"go":   {{DocId: 1}},
+		"rust": {{DocId: 2}},
+		"web":  {{DocId: 3}},
 	})
+	got := postingIDs(gotPostings)
 	want := []int64{1}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Evaluate() = %v, want %v", got, want)
 	}
+}
+
+func postingIDs(postings []index.Posting) []int64 {
+	ids := make([]int64, 0, len(postings))
+	for _, posting := range postings {
+		ids = append(ids, posting.DocId)
+	}
+	return ids
 }
 
 func TestParseRejectsMalformedQueries(t *testing.T) {

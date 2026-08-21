@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 
-	"github.com/GabrielMoody/Cariin/internal/search/ast"
+	ast "github.com/GabrielMoody/Cariin/internal/search/AST"
 	"github.com/GabrielMoody/Cariin/internal/search/token"
 )
 
