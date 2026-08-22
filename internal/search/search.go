@@ -31,7 +31,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idx := index.Get()
-	postings := query.Evaluate(*idx)
+	postings := query.Evaluate(*idx.All)
 	docs := make([]documents.Document, 0, len(postings))
 	for _, posting := range postings {
 		docs = append(docs, documents.Documents[posting.DocId])

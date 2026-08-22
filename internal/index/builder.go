@@ -32,13 +32,11 @@ func tokenize(text string) []string {
 	return strings.Fields(text)
 }
 
-func Build(docs map[int64]documents.Document) *InvertedIdx {
+func Build(docs map[int64]documents.Document, field func(documents.Document) string) *InvertedIdx {
 	idx := make(InvertedIdx)
 
 	for _, v := range docs {
-		text := v.Title + " " + v.Body
-
-		tokens := tokenize(text)
+		tokens := tokenize(field(v))
 
 		for i, token := range tokens {
 			postings := idx[token]

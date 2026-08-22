@@ -6,19 +6,26 @@ import (
 	"github.com/GabrielMoody/Cariin/internal/documents"
 )
 
+type InvertedIdx map[string][]Posting
+
 type Posting struct {
 	DocId     int64
 	Positions []int
 }
 
-type InvertedIdx map[string][]Posting
+type Index struct {
+	All   *InvertedIdx
+	Title *InvertedIdx
+	Body  *InvertedIdx
+	Url   *InvertedIdx
+}
 
 var (
-	Idx  *InvertedIdx
+	Idx  *Index
 	once sync.Once
 )
 
-func Get() *InvertedIdx {
+func Get() *Index {
 	once.Do(func() {
 		Idx = BuildInvertedIdx()
 	})
@@ -26,6 +33,24 @@ func Get() *InvertedIdx {
 	return Idx
 }
 
-func BuildInvertedIdx() *InvertedIdx {
-	return Build(documents.Documents)
+func BuildInvertedIdx() *Index {
+	indexes := &Index{}
+
+	indexes.Title = Build(documents.Documents, func(doc documents.Document) string {
+		return doc.Title
+	})
+
+	indexes.Body = Build(documents.Documents, func(doc documents.Document) string {
+		return doc.Body
+	})
+
+	indexes.Url = Build(documents.Documents, func(doc documents.Document) string {
+		return doc.URL
+	})
+
+	indexes.All = Build(documents.Documents, func(doc documents.Document) string {
+		return doc.Title + " " + doc.Body
+	})
+
+	return indexes
 }
