@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	ast "github.com/GabrielMoody/Cariin/internal/search/AST"
 	"github.com/GabrielMoody/Cariin/internal/search/token"
@@ -18,7 +19,7 @@ func Parse(input string) (ast.Query, error) {
 		return nil, err
 	}
 
-	if len(tokens) == 1 {
+	if len(tokens) == 1 && tokens[0].Type == token.TokenEOF {
 		return nil, fmt.Errorf("query is empty")
 	}
 
@@ -88,7 +89,34 @@ func (p *parser) parseUnary() (ast.Query, error) {
 		return nil, fmt.Errorf("expected term, got %q", current.Value)
 	}
 	p.position++
+
+	if strings.Contains(current.Value, ":") {
+		field, term := ParseFieldTerm(current.Value)
+		if field == "" || term == "" || term == current.Value {
+			return nil, fmt.Errorf("invalid field query %q", current.Value)
+		}
+		return ast.TermQuery{Field: field, Term: term}, nil
+	}
+
 	return ast.TermQuery{Term: current.Value}, nil
+}
+
+func ParseFieldTerm(value string) (string, string) {
+	parts := strings.SplitN(value, ":", 2)
+
+	if len(parts) != 2 {
+		return "", value
+	}
+
+	field := strings.ToLower(parts[0])
+	term := strings.ToLower(parts[1])
+
+	switch field {
+	case "title", "body", "url":
+		return field, term
+	default:
+		return "", value
+	}
 }
 
 func (p *parser) current() token.Token {

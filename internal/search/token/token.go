@@ -20,6 +20,7 @@ const (
 
 type Token struct {
 	Type  TokenType
+	Field string
 	Value string
 }
 

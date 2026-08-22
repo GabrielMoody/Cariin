@@ -8,11 +8,12 @@ import (
 )
 
 type Query interface {
-	Evaluate(idx index.InvertedIdx) []index.Posting
+	Evaluate(idx index.Index) []index.Posting
 }
 
 type TermQuery struct {
-	Term string
+	Field string
+	Term  string
 }
 
 type AndQuery struct {
@@ -30,20 +31,21 @@ type NotQuery struct {
 	Query Query
 }
 
-func (q TermQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
+func (q TermQuery) Evaluate(idx index.Index) []index.Posting {
+	fieldIndex := selectFieldIndex(idx, q.Field)
 	terms := strings.Fields(strings.ToLower(q.Term))
 	if len(terms) <= 1 {
-		return idx[q.Term]
+		return fieldIndex[terms[0]]
 	}
 
 	postingsByDocument := make(map[int64]index.Posting)
-	for _, posting := range idx[terms[0]] {
+	for _, posting := range fieldIndex[terms[0]] {
 		postingsByDocument[posting.DocId] = posting
 	}
 
 	for _, term := range terms[1:] {
 		termPostings := make(map[int64]index.Posting)
-		for _, posting := range idx[term] {
+		for _, posting := range fieldIndex[term] {
 			termPostings[posting.DocId] = posting
 		}
 
@@ -58,8 +60,6 @@ func (q TermQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
 			if hasAdjacentPosition(previous.Positions, posting.Positions) {
 				continue
 			}
-
-			// No adjacent positions means this word is an implicit AND term.
 		}
 	}
 
@@ -69,6 +69,25 @@ func (q TermQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].DocId < result[j].DocId })
 	return result
+}
+
+func selectFieldIndex(idx index.Index, field string) index.InvertedIdx {
+	var selected *index.InvertedIdx
+	switch field {
+	case "title":
+		selected = idx.Title
+	case "body":
+		selected = idx.Body
+	case "url":
+		selected = idx.Url
+	default:
+		selected = idx.All
+	}
+
+	if selected == nil {
+		return index.InvertedIdx{}
+	}
+	return *selected
 }
 
 func hasAdjacentPosition(left, right []int) bool {
@@ -82,27 +101,27 @@ func hasAdjacentPosition(left, right []int) bool {
 	return false
 }
 
-func (q AndQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
+func (q AndQuery) Evaluate(idx index.Index) []index.Posting {
 	left := q.Left.Evaluate(idx)
 	right := q.Right.Evaluate(idx)
 
 	return intersection(left, right)
 }
 
-func (q OrQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
+func (q OrQuery) Evaluate(idx index.Index) []index.Posting {
 	left := q.Left.Evaluate(idx)
 	right := q.Right.Evaluate(idx)
 
 	return union(left, right)
 }
 
-func (q NotQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
+func (q NotQuery) Evaluate(idx index.Index) []index.Posting {
 	operand := q.Term
 	var excluded []index.Posting
 	if q.Query != nil {
 		excluded = q.Query.Evaluate(idx)
 	} else {
-		excluded = idx[operand]
+		excluded = (*idx.All)[operand]
 	}
 
 	excludedSet := make(map[int64]bool, len(excluded))
@@ -111,7 +130,7 @@ func (q NotQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
 	}
 
 	allDocuments := make(map[int64]bool)
-	for _, postings := range idx {
+	for _, postings := range *idx.All {
 		for _, posting := range postings {
 			allDocuments[posting.DocId] = true
 		}
@@ -127,6 +146,15 @@ func (q NotQuery) Evaluate(idx index.InvertedIdx) []index.Posting {
 	sort.Slice(result, func(i, j int) bool { return result[i].DocId < result[j].DocId })
 	return result
 }
+
+// func evaluateFieldTerm(q TermQuery, idx index.Index) []index.Posting {
+// 	var result []index.Posting
+
+// 	switch q.Field {
+// 	case "":
+// 		result = append(result, (*idx.All)[q.Term]...)
+// 	}
+// }
 
 func intersection(a, b []index.Posting) []index.Posting {
 	set := make(map[int64]bool)
