@@ -14,7 +14,7 @@ type scoredPosting struct {
 	score   float64
 }
 
-func RankTFIDF(query ast.Query, idx index.Index, postings []index.Posting) []index.Posting {
+func TFIDF(query ast.Query, idx index.Index, postings []index.Posting) []index.Posting {
 	scores := make(map[int64]float64, len(postings))
 	for _, posting := range postings {
 		scores[posting.DocId] = 0
@@ -86,7 +86,7 @@ func inverseDocumentFrequency(fieldIndex index.InvertedIdx, term string) float64
 	}
 
 	documentFrequency := len(fieldIndex[term])
-	return math.Log(1 + float64(documentCount)/float64(documentFrequency))
+	return math.Log(float64(documentCount) / float64(documentFrequency))
 }
 
 func selectRankingFieldIndex(idx index.Index, field string) index.InvertedIdx {

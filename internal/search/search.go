@@ -33,7 +33,10 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	idx := index.Get()
 	postings := query.Evaluate(*idx)
-	postings = ranking.RankTFIDF(query, *idx, postings)
+
+	bm := ranking.NewBM25()
+
+	postings = bm.RankBM25(query, *idx, postings)
 	docs := make([]documents.Document, 0, len(postings))
 	for _, posting := range postings {
 		docs = append(docs, documents.Documents[posting.DocId])
