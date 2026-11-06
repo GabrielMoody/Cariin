@@ -1,1 +1,8 @@
 cariin*
+
+*.parquet
+
+.venv*
+__pycache__
+
+.env

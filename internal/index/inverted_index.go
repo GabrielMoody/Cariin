@@ -25,11 +25,14 @@ var (
 	once sync.Once
 )
 
-func Get() *Index {
+func Init() {
 	once.Do(func() {
+		documents.Init()
 		Idx = BuildInvertedIdx()
 	})
+}
 
+func Get() *Index {
 	return Idx
 }
 

@@ -1,6 +1,42 @@
 package documents
 
-import "database/sql"
+import (
+	"database/sql"
+)
+
+func GetDocuments(db *sql.DB) (map[int64]Document, error) {
+	query := `SELECT id, url, title, body FROM documents LIMIT 1000`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	documents := make(map[int64]Document)
+
+	for rows.Next() {
+		var doc Document
+
+		err := rows.Scan(
+			&doc.Id,
+			&doc.URL,
+			&doc.Title,
+			&doc.Body,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		documents[doc.Id] = doc
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return documents, nil
+}
 
 func SaveDocument(db *sql.DB, document *T_Document) error {
 	query := `

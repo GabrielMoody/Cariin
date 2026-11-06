@@ -1,37 +1,14 @@
 package crawler
 
-import (
-	"net/url"
-	"strings"
-)
+func (c *Crawler) markVisited(rawURL string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-func NormalizeURL(rawURL string) (string, error) {
-	u, err := url.Parse(rawURL)
-
-	if err != nil {
-		return "", err
+	if _, exists := c.visited[rawURL]; exists {
+		return false
 	}
 
-	u.Fragment = ""
+	c.visited[rawURL] = struct{}{}
 
-	u.Host = strings.ToLower(u.Host)
-
-	return u.String(), nil
-}
-
-func ResolveURL(base string, href string) (string, error) {
-
-	baseURL, err := url.Parse(base)
-
-	if err != nil {
-		return "", err
-	}
-
-	refURL, err := url.Parse(href)
-
-	if err != nil {
-		return "", err
-	}
-
-	return baseURL.ResolveReference(refURL).String(), nil
+	return true
 }

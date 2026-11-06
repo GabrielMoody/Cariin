@@ -1,34 +1,29 @@
 package crawler
 
 import (
+	"net/url"
 	"strings"
+	"time"
 
-	"github.com/GabrielMoody/Cariin/internal/documents"
-	"github.com/PuerkitoBio/goquery"
+	"github.com/go-shiori/go-readability"
 )
 
-func ParseDocument(url string, html string) (*documents.T_Document, error) {
-	doc, err := goquery.NewDocumentFromReader(
-		strings.NewReader(html),
+func parseDocument(target *url.URL, html []byte) (*Document, error) {
+
+	article, err := readability.FromReader(
+		strings.NewReader(string(html)),
+		target,
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	title := strings.TrimSpace(
-		doc.Find("title").First().Text(),
-	)
-
-	doc.Find("script, style, nav, footer").Remove()
-
-	body := strings.TrimSpace(
-		doc.Find("body").Text(),
-	)
-
-	return &documents.T_Document{
-		URL:   url,
-		Title: title,
-		Body:  body,
+	return &Document{
+		Title:     strings.TrimSpace(article.Title),
+		Domain:    target.Hostname(),
+		URL:       target.String(),
+		Content:   strings.TrimSpace(article.TextContent),
+		CrawledAt: time.Now().UTC(),
 	}, nil
 }

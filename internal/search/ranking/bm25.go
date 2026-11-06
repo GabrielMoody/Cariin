@@ -1,7 +1,6 @@
 package ranking
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -61,7 +60,6 @@ func (b *BM25) RankBM25(query ast.Query, idx index.Index, postings []index.Posti
 	for _, scored := range ranked {
 		result = append(result, scored.posting)
 	}
-	fmt.Println(scores)
 	return result
 }
 

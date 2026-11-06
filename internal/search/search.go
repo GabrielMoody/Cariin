@@ -2,10 +2,13 @@ package search
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"sync"
 
 	"github.com/GabrielMoody/Cariin/internal/documents"
 	"github.com/GabrielMoody/Cariin/internal/index"
+	"github.com/GabrielMoody/Cariin/internal/reranker"
 	"github.com/GabrielMoody/Cariin/internal/search/parser"
 	"github.com/GabrielMoody/Cariin/internal/search/ranking"
 )
@@ -16,6 +19,19 @@ type SearchQuery struct {
 
 type SearchResponse struct {
 	Documents []documents.Document
+}
+
+var (
+	client *reranker.Client
+	once   sync.Once
+)
+
+func GetHttpClient() *reranker.Client {
+	once.Do(func() {
+		client = reranker.NewClient("http://127.0.0.1:8001")
+	})
+
+	return client
 }
 
 func SearchHandler(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +58,19 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 		docs = append(docs, documents.Documents[posting.DocId])
 	}
 
-	data, _ := json.Marshal(SearchResponse{
-		Documents: docs,
+	log.Printf("Retrieve %d docs\n", len(docs))
+
+	client := GetHttpClient()
+
+	res, err := client.Rerank(r.Context(), req.Q, docs)
+
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	data, _ := json.Marshal(reranker.RerankResponse{
+		Query:   req.Q,
+		Results: res.Results,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
