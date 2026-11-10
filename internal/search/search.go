@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 
 	"github.com/GabrielMoody/Cariin/internal/documents"
@@ -18,7 +19,7 @@ type SearchQuery struct {
 }
 
 type SearchResponse struct {
-	Documents []documents.Document
+	Documents []documents.Document `json:"documents"`
 }
 
 var (
@@ -59,21 +60,56 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Retrieve %d docs\n", len(docs))
+	if len(docs) == 0 {
+		writeSearchResponse(w, SearchResponse{Documents: docs})
+		return
+	}
 
 	client := GetHttpClient()
 
 	res, err := client.Rerank(r.Context(), req.Q, docs)
-
 	if err != nil {
 		log.Println(err.Error())
+		http.Error(w, "reranking failed", http.StatusBadGateway)
+		return
 	}
 
-	data, _ := json.Marshal(reranker.RerankResponse{
-		Query:   req.Q,
-		Results: res.Results,
+	writeSearchResponse(w, SearchResponse{
+		Documents: documentsByRank(res.Results, docs),
 	})
+}
+
+func writeSearchResponse(w http.ResponseWriter, response SearchResponse) {
+	data, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "failed to encode search results", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(data)
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("write search response: %v", err)
+	}
+}
+
+func documentsByRank(results []reranker.RankedDocument, docs []documents.Document) []documents.Document {
+	rankedResults := append([]reranker.RankedDocument(nil), results...)
+	sort.SliceStable(rankedResults, func(i, j int) bool {
+		return rankedResults[i].Rank < rankedResults[j].Rank
+	})
+
+	documentsByID := make(map[int64]documents.Document, len(docs))
+	for _, doc := range docs {
+		documentsByID[doc.Id] = doc
+	}
+
+	rankedDocuments := make([]documents.Document, 0, len(rankedResults))
+	for _, result := range rankedResults {
+		if doc, ok := documentsByID[result.ID]; ok {
+			rankedDocuments = append(rankedDocuments, doc)
+		}
+	}
+
+	return rankedDocuments
 }

@@ -201,11 +201,6 @@ def rerank(
             for doc, score in zip(payload.documents, scores)
         ]
 
-        scored_documents.sort(
-            key=lambda item: item["score"],
-            reverse=True,
-        )
-
         results = [
             RankedDocument(
                 id=item["id"],

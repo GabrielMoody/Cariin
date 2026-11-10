@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faff">
+  <meta name="description" content="Search the web with Cariin.">
+  <title>Cariin — Search</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #202124;
+      background: #fff;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      min-height: 64px;
+      padding: 0 32px;
+    }
+
+    .header-brand {
+      color: #5f6368;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    main {
+      width: min(100% - 40px, 680px);
+      margin: auto;
+      padding: 64px 0 96px;
+      text-align: center;
+    }
+
+    .brand {
+      margin: 0 0 30px;
+      font-size: clamp(56px, 12vw, 82px);
+      font-weight: 600;
+      letter-spacing: -6px;
+      line-height: 1;
+    }
+
+    .brand span:nth-child(1), .brand span:nth-child(4) { color: #4285f4; }
+    .brand span:nth-child(2), .brand span:nth-child(6) { color: #ea4335; }
+    .brand span:nth-child(3) { color: #fbbc05; }
+    .brand span:nth-child(5) { color: #34a853; }
+
+    .tagline {
+      margin: -17px 0 29px;
+      color: #5f6368;
+      font-size: 15px;
+    }
+
+    form { width: 100%; }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 54px;
+      padding: 0 18px;
+      border: 1px solid #dfe1e5;
+      border-radius: 28px;
+      background: #fff;
+      transition: box-shadow 150ms ease, border-color 150ms ease;
+    }
+
+    .search-box:hover, .search-box:focus-within {
+      border-color: transparent;
+      box-shadow: 0 1px 6px rgb(32 33 36 / 28%);
+    }
+
+    .search-icon {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 auto;
+      color: #9aa0a6;
+    }
+
+    #query {
+      width: 100%;
+      min-width: 0;
+      padding: 14px 0;
+      border: 0;
+      outline: 0;
+      color: #202124;
+      background: transparent;
+      font: inherit;
+      font-size: 16px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 25px 0 0;
+    }
+
+    button {
+      min-height: 38px;
+      padding: 0 18px;
+      border: 1px solid #f8f9fa;
+      border-radius: 5px;
+      color: #3c4043;
+      background: #f8f9fa;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #dadce0;
+      box-shadow: 0 1px 1px rgb(0 0 0 / 10%);
+    }
+
+    button:focus-visible, a:focus-visible {
+      outline: 2px solid #4285f4;
+      outline-offset: 3px;
+    }
+
+    button:disabled { cursor: wait; opacity: .65; }
+
+    #status {
+      min-height: 24px;
+      margin: 24px 0 0;
+      color: #5f6368;
+      font-size: 14px;
+    }
+
+    #results {
+      margin: 24px auto 0;
+      text-align: left;
+    }
+
+    .result {
+      margin: 0 0 27px;
+      overflow-wrap: anywhere;
+    }
+
+    .result-url {
+      display: block;
+      margin-bottom: 5px;
+      color: #202124;
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .result-title {
+      display: inline-block;
+      margin: 0 0 5px;
+      color: #1a0dab;
+      font-size: 20px;
+      font-weight: 400;
+      line-height: 1.35;
+      text-decoration: none;
+    }
+
+    .result-title:hover { text-decoration: underline; }
+
+    .result-snippet {
+      margin: 0;
+      color: #4d5156;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    footer {
+      padding: 18px 24px;
+      border-top: 1px solid #dadce0;
+      color: #70757a;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      header { min-height: 52px; padding: 0 20px; }
+      main { width: min(100% - 32px, 680px); padding-top: 45px; }
+      .brand { margin-bottom: 26px; letter-spacing: -4px; }
+      .tagline { font-size: 14px; }
+      .search-box { min-height: 50px; padding: 0 15px; }
+      .actions { margin-top: 20px; }
+      .result-title { font-size: 18px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="header-brand" href="/" aria-label="Cariin home">Cariin Search</a>
+  </header>
+  <main>
+    <h1 class="brand" aria-label="Cariin"><span>C</span><span>a</span><span>r</span><span>i</span><span>i</span><span>n</span></h1>
+    <p class="tagline">Find what you’re looking for.</p>
+    <form id="search-form" role="search">
+      <label class="search-box" for="query">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" stroke-width="2"></circle>
+          <path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+        </svg>
+        <input id="query" name="query" type="search" placeholder="Search the web" autocomplete="off" required>
+      </label>
+      <div class="actions">
+        <button id="submit-button" type="submit">Cariin Search</button>
+      </div>
+    </form>
+    <p id="status" role="status" aria-live="polite">Search your indexed pages with Cariin.</p>
+    <section id="results" aria-label="Search results"></section>
+  </main>
+  <footer>Powered by Cariin</footer>
+
+  <script>
+    const form = document.querySelector("#search-form");
+    const input = document.querySelector("#query");
+    const button = document.querySelector("#submit-button");
+    const status = document.querySelector("#status");
+    const results = document.querySelector("#results");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const query = input.value.trim();
+      if (!query) {
+        input.focus();
+        return;
+      }
+
+      button.disabled = true;
+      status.textContent = "Searching…";
+      results.replaceChildren();
+
+      try {
+        const response = await fetch("/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ query })
+        });
+
+        if (!response.ok) {
+          const detail = await response.text();
+          throw new Error(detail.trim() || `Search failed (${response.status}).`);
+        }
+
+        const data = await response.json();
+        const documents = data.documents || data.Documents || [];
+        if (documents.length === 0) {
+          status.textContent = `No results found for “${query}”.`;
+          return;
+        }
+
+        status.textContent = `${documents.length} ${documents.length === 1 ? "result" : "results"} for “${query}”.`;
+        for (const document of documents) {
+          results.append(makeResult(document));
+        }
+      } catch (error) {
+        status.textContent = error.message || "Something went wrong while searching. Please try again.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    function makeResult(doc) {
+      const article = document.createElement("article");
+      article.className = "result";
+
+      const url = doc.URL || doc.url || "";
+      const title = doc.Title || doc.title || url || "Untitled result";
+      const body = doc.Body || doc.body || "";
+
+      const address = document.createElement("span");
+      address.className = "result-url";
+      address.textContent = url;
+      article.append(address);
+
+      const heading = document.createElement("h2");
+      heading.style.margin = "0";
+      const link = document.createElement("a");
+      link.className = "result-title";
+      link.textContent = title;
+      try {
+        const parsed = new URL(url, window.location.href);
+        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+          link.href = parsed.href;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+        }
+      } catch {
+        // Keep invalid URLs as non-clickable result titles.
+      }
+      heading.append(link);
+      article.append(heading);
+
+      if (body) {
+        const snippet = document.createElement("p");
+        snippet.className = "result-snippet";
+        snippet.textContent = body.length > 300 ? `${body.slice(0, 300).trimEnd()}…` : body;
+        article.append(snippet);
+      }
+      return article;
+    }
+  </script>
+</body>
+</html>
